@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>פותר הקוביה ההונגרית עם תמונות</title>
+<style>
+:root{--bg:#f6f3ee;--ink:#1d1b19;--muted:#77706a;--card:#fff;--line:#e7e1d8;--acc:#1f6f5c;--acc2:#e3f1ec;--warn:#d9822b;--bad:#c0392b;--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+body{overflow:hidden}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:12px 16px;background:var(--card);color:var(--ink);border:1px solid var(--line)}
+button.pri{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+button.ghost{background:transparent}
+button:disabled{opacity:.45}
+.app{position:fixed;inset:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 10px) 14px 8px}
+.top h1{font-size:16px;margin:0;flex:1;font-weight:650}
+.iconbtn{width:40px;height:40px;padding:0;display:grid;place-items:center;border-radius:12px;font-size:18px}
+.screen{flex:1;display:none;flex-direction:column;min-height:0}
+.screen.on{display:flex}
+.pad{padding:0 16px}
+.foot{padding:10px 16px calc(env(safe-area-inset-bottom) + 12px);display:flex;gap:10px}
+.foot button{flex:1;padding:15px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+/* intro */
+.hero{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:0 22px}
+.hero h2{font-size:26px;margin:0;line-height:1.2}
+.hero p{margin:0;line-height:1.55;color:#4a4540}
+.steps3{display:flex;gap:8px;margin-top:6px}
+.steps3 div{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;font-size:13px;line-height:1.4}
+.steps3 b{display:block;font-size:20px;color:var(--acc)}
+/* capture */
+.dots{display:flex;gap:6px;justify-content:center;padding:4px 0 8px}
+.dots i{width:28px;height:6px;border-radius:3px;background:var(--line)}
+.dots i.done{background:var(--acc)}
+.dots i.cur{background:#7fb8a7}
+.guide{position:relative;height:34vh;min-height:190px}
+.guide.full{flex:1;height:auto}
+.guide canvas{width:100%!important;height:100%!important;display:block}
+.instr{padding:4px 18px 10px;text-align:center}
+.instr h3{margin:0 0 4px;font-size:18px}
+.instr p{margin:0;color:#4a4540;font-size:14px;line-height:1.5}
+.camwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 16px;overflow:hidden}
+.cambox{position:relative;height:100%;max-height:calc(100vw - 32px);max-width:100%;aspect-ratio:1;border-radius:18px;overflow:hidden;background:#222}
+.cambox video{width:100%;height:100%;object-fit:cover;display:block}
+.cambox .frame{position:absolute;inset:11%;border:2px solid rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+.cambox .frame:before,.cambox .frame:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 33%,rgba(255,255,255,.55) 33%,rgba(255,255,255,.55) calc(33% + 1px),transparent calc(33% + 1px),transparent 66%,rgba(255,255,255,.55) 66%,rgba(255,255,255,.55) calc(66% + 1px),transparent calc(66% + 1px))}
+.cambox .frame:after{transform:rotate(90deg)}
+.nocam{display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;color:#ddd;text-align:center;height:100%;padding:20px;font-size:14px}
+.nocam button{background:#fff}
+.lbtn{display:flex;align-items:center;justify-content:center;border-radius:12px;padding:12px 16px;background:#fff;color:var(--ink);border:1px solid var(--line);cursor:pointer;font-weight:600}
+.lbtn{position:relative;overflow:hidden}.fin{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:200px}
+.lbtn.ghost{background:transparent;color:#eee;border-color:#666;font-weight:400}
+.foot .lbtn{flex:1;padding:15px}.lbtn.pri{background:var(--acc);color:#fff;border-color:var(--acc)}
+/* adjust */
+.adjwrap{flex:1;min-height:0;position:relative;margin:0 12px;border-radius:14px;overflow:hidden;background:#111;touch-action:none}
+.adjwrap canvas{position:absolute;left:0;top:0}
+.adjwrap svg{position:absolute;inset:0;width:100%;height:100%}
+.handle{fill:#fff;stroke:var(--acc);stroke-width:3}
+/* verify */
+.vscroll{flex:1;overflow:auto;padding:4px 10px 10px}
+.net{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;direction:ltr;margin:0 auto;max-width:520px}
+.net.list{grid-template-columns:repeat(2,1fr);gap:14px 12px;max-width:420px}.net.list .face.blank{display:none}
+.face{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:#222;padding:2px;border-radius:6px}
+.face.blank{background:none}
+.cell{position:relative;aspect-ratio:1;border-radius:3px;overflow:hidden}
+.cell canvas{width:100%;height:100%;display:block}
+.cell .bar{position:absolute;right:5%;bottom:5%;width:20%;height:20%;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+.cell .mini{position:absolute;top:3%;left:3%;width:38%;height:38%;border-radius:3px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.5);overflow:hidden}
+.cell .mini canvas{width:100%;height:100%}
+.cell.low{outline:3px dashed var(--warn);outline-offset:-3px}
+.cell.fixed:after{content:"✓";position:absolute;right:3%;top:2%;font-size:11px;background:var(--acc);color:#fff;border-radius:50%;width:16px;height:16px;display:grid;place-items:center}
+.flabel{font-size:10px;text-align:center;color:var(--muted);margin-top:2px;direction:rtl}
+.legend{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0}
+.chip{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 10px 4px 4px;font-size:12px}
+.chip canvas{width:22px;height:22px;border-radius:50%}
+.chip.bad{border-color:var(--bad);color:var(--bad)}
+.note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.5;margin:8px auto;max-width:520px}
+.note.warn{border-color:#f0c48f;background:#fff8ef}
+.note.err{border-color:#e7a29a;background:#fff3f1}
+/* sheet */
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:flex-end;z-index:40}
+.sheet.on{display:flex}
+.sheet .box{background:var(--card);width:100%;border-radius:20px 20px 0 0;padding:16px 16px calc(env(safe-area-inset-bottom) + 16px);max-height:85vh;overflow:auto}
+.sheet h4{margin:4px 0 10px;font-size:15px}
+.big{width:150px;height:150px;border-radius:10px;overflow:hidden;margin:0 auto 10px}
+.big canvas{width:100%;height:100%}
+.opts{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:14px}
+.opts.r4{grid-template-columns:repeat(4,1fr)}
+.opt{aspect-ratio:1;border-radius:10px;overflow:hidden;border:3px solid transparent;padding:0;background:#eee}
+.opt.sel{border-color:var(--acc)}
+.opt canvas{width:100%;height:100%;display:block}
+/* solve */
+.solvehead{padding:0 16px 6px}
+.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--acc);width:0;transition:width .3s}
+.meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px}
+.phase{background:var(--acc2);color:var(--acc);border-radius:999px;padding:2px 10px;font-weight:600}
+.hold{display:flex;align-items:center;gap:8px;justify-content:center;font-size:12px;color:var(--muted);padding:2px 0}
+.hold canvas{width:26px;height:26px;border-radius:5px}
+.view3d{flex:1;min-height:0;position:relative;touch-action:none}
+.view3d canvas{width:100%!important;height:100%!important;display:block}
+.flat{display:none;padding:6px 16px}
+.flat .net{max-width:300px;gap:3px}
+.lay-flat .view3d{display:none}.lay-flat .flat{display:block;flex:1;overflow:auto}
+.lay-both .flat{display:block}
+.move{margin:0 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;gap:14px;align-items:center}
+.move .not{font-size:34px;font-weight:750;min-width:64px;text-align:center;direction:ltr;font-family:ui-monospace,Menlo,monospace}
+.move .desc{flex:1;font-size:15px;line-height:1.45}
+.move .desc small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.hide-not .move .not{display:none}
+.replay{position:absolute;bottom:8px;left:12px;font-size:13px;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.9)}
+.done-badge{position:absolute;inset:0;display:none;align-items:center;justify-content:center;pointer-events:none}
+.done-badge span{background:var(--acc);color:#fff;border-radius:999px;padding:10px 18px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.busy{position:fixed;inset:0;background:rgba(246,243,238,.85);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:50;font-size:15px}
+.busy.on{display:flex}
+.spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--line);border-top-color:var(--acc);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* prototype panel */
+.panel{position:fixed;top:0;bottom:0;left:0;width:min(330px,88vw);background:#fff;z-index:60;transform:translateX(-102%);transition:transform .25s;box-shadow:4px 0 30px rgba(0,0,0,.15);overflow:auto;padding:calc(env(safe-area-inset-top) + 14px) 16px 30px}
+.panel.on{transform:none}
+.panel h5{margin:18px 0 8px;font-size:12px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+.panel .row{display:flex;flex-wrap:wrap;gap:6px}
+.panel .row button{padding:7px 10px;font-size:13px;border-radius:9px}
+.panel .row button.sel{background:var(--acc2);border-color:var(--acc);color:var(--acc);font-weight:600}
+.tog{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;gap:10px}
+.tog input{width:20px;height:20px;accent-color:var(--acc)}
+.scrim{position:fixed;inset:0;z-index:55;display:none}
+.scrim.on{display:block}
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 90px);left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:9px 14px;border-radius:10px;font-size:13px;z-index:70;opacity:0;transition:opacity .25s;pointer-events:none;max-width:88vw;text-align:center}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="top">
+    <button class="iconbtn" id="panelBtn" title="פאנל אב־טיפוס">☰</button>
+    <h1 id="title">פותר הקוביה עם תמונות</h1>
+    <button class="iconbtn ghost" id="homeBtn" title="התחלה מחדש">⟲</button>
+  </div>
+
+  <!-- INTRO -->
+  <section class="screen on" id="s-intro">
+    <div class="hero">
+      <h2>קוביה עם תמונות?<br>צריך לסדר גם את הכיוון.</h2>
+      <p>בקוביה עם תמונות לא מספיק שכל פאה תהיה בצבע אחד: כל התמונות צריכות לעמוד באותו כיוון. אחרי שהחלקים במקום, רק 6 המרכזים יכולים להישאר מסובבים, ולכן הפתרון כולל גם שלב שמיישר אותם.</p>
+      <div class="steps3">
+        <div><b>1</b>מצלמים 6 פאות, אחת אחרי השנייה, לפי ההדגמה</div>
+        <div><b>2</b>בודקים שהזיהוי נכון ומתקנים בנגיעה</div>
+        <div><b>3</b>מבצעים את הפתרון צעד אחר צעד</div>
+      </div>
+    </div>
+    <div class="foot"><button class="pri" id="startBtn">להתחיל לצלם</button><button id="demoBtn">הדגמה בלי מצלמה</button></div>
+  </section>
+
+  <!-- CAPTURE -->
+  <section class="screen" id="s-capture">
+    <div class="dots" id="dots"></div>
+    <div class="guide" id="guide"></div>
+    <div class="instr"><h3 id="capTitle"></h3><p id="capText"></p></div>
+    <div class="camwrap" id="camwrap">
+      <div class="cambox" id="cambox">
+        <video id="video" playsinline muted autoplay></video>
+        <div class="frame" id="frame"></div>
+        <div class="nocam" id="nocam" style="display:none">
+          <div>צלם את הפאה כך שהיא ממלאת את רוב התמונה. אפשר גם לצלם את כל 6 הפאות קודם במצלמה של הטלפון, ואז לבחור את כולן מהגלריה לפי הסדר.</div>
+          <span class="lbtn">📷 לצלם את הפאה<input type="file" accept="image/*" capture="environment" class="fin cam"></span>
+          <span class="lbtn ghost">🖼️ לבחור מהגלריה (אפשר כמה)<input type="file" accept="image/*" multiple class="fin gal"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot"><button id="capBack">→ הקודמת</button><button class="pri" id="shootBtn">צלם</button><span class="lbtn pri" id="shootLbl" style="display:none">📷 צלם<input type="file" accept="image/*" capture="environment" class="fin cam"></span></div>
+  </section>
+
+  <!-- ADJUST -->
+  <section class="screen" id="s-adjust">
+    <div class="instr"><h3 id="adjTitle">מיקום הקוביה</h3><p>גרור את 4 הפינות לפינות של הפאה. הרשת צריכה לעבור בין המדבקות.</p></div>
+    <div class="adjwrap" id="adjwrap"><canvas id="adjcv"></canvas><svg id="adjsvg"></svg></div>
+    <div class="foot"><button id="retake">לצלם שוב</button><button class="pri" id="adjOk">אישור</button></div>
+  </section>
+
+  <!-- VERIFY -->
+  <section class="screen" id="s-verify">
+    <div class="vscroll">
+      <div class="note small">בכל מדבקה, התמונה הקטנה בפינה מראה איך המערכת זיהתה את הצבע ואת הכיוון. היא צריכה להיראות כמו המדבקה ולעמוד באותו כיוון. אם לא, נוגעים במדבקה ומתקנים.</div>
+      <div id="vmsg"></div>
+      <div class="net" id="vnet"></div>
+      <div class="legend" id="vlegend"></div>
+    </div>
+    <div class="foot"><button id="vBack">→ לצילום</button><button class="pri" id="solveBtn">לחשב פתרון</button></div>
+  </section>
+
+  <!-- SOLVE -->
+  <section class="screen" id="s-solve">
+    <div class="solvehead">
+      <div class="prog"><i id="progbar"></i></div>
+      <div class="meta"><span id="stepno"></span><span class="phase" id="phase"></span></div>
+    </div>
+    <div class="hold" id="hold"></div>
+    <div class="view3d" id="view3d"><button class="replay" id="replay">↻ להציג שוב</button><div class="done-badge" id="doneBadge"><span>🎉 הקוביה פתורה</span></div></div>
+    <div class="flat" id="flat"><div class="net" id="fnet"></div></div>
+    <div class="move" id="moveCard"><div class="not" id="mnot"></div><div class="desc" id="mdesc"></div></div>
+    <div class="foot"><button id="prevBtn">→ אחורה</button><button class="pri" id="nextBtn">ביצעתי ✓</button></div>
+  </section>
+</div>
+
+<div class="sheet" id="sheet"><div class="box">
+  <div class="big" id="sbig"></div>
+  <h4>הצבע של המדבקה</h4><div class="opts" id="scolors"></div>
+  <h4>הכיוון: בחר את האפשרות שנראית כמו המדבקה</h4><div class="opts r4" id="srots"></div>
+  <button class="pri" style="width:100%" id="sclose">סיום</button>
+</div></div>
+
+<div class="busy" id="busy"><div class="spin"></div><div id="busyText">מחשב…</div></div>
+<div class="toast" id="toast"></div>
+<div class="scrim" id="scrim"></div>
+
+<aside class="panel" id="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center"><b>פאנל אב־טיפוס</b><button class="iconbtn ghost" id="panelClose">✕</button></div>
+  <h5>קפיצה לשלב (עם נתוני הדגמה)</h5>
+  <div class="row" id="jumpRow"></div>
+  <h5>פריסת מסך הצילום</h5>
+  <div class="row" data-opt="capLayout">
+    <button data-v="combined">מדריך + מצלמה יחד</button><button data-v="split">מדריך ואז מצלמה</button>
+  </div>
+  <h5>פריסת מסך האימות</h5>
+  <div class="row" data-opt="verifyLayout">
+    <button data-v="net">פריסת קוביה</button><button data-v="list">פאות גדולות</button>
+  </div>
+  <h5>פריסת מסך הפתרון</h5>
+  <div class="row" data-opt="solveLayout">
+    <button data-v="3d">תלת־ממד</button><button data-v="both">תלת־ממד + פריסה</button><button data-v="flat">פריסה שטוחה</button>
+  </div>
+  <h5>פיצ׳רים</h5>
+  <label class="tog">מצלמה חיה (אם זמינה)<input type="checkbox" data-t="liveCam"></label>
+  <label class="tog">מסך כיוונון חיתוך אחרי צילום<input type="checkbox" data-t="adjust"></label>
+  <label class="tog">תיקון כיוון אוטומטי לפי רוב<input type="checkbox" data-t="autoFix"></label>
+  <label class="tog">זווית מצלמה לפי הפאה שמסתובבת<input type="checkbox" data-t="autoView"></label>
+  <label class="tog">הנפשה בלולאה<input type="checkbox" data-t="loop"></label>
+  <label class="tog">הצגת סימון מהלכים (R U')<input type="checkbox" data-t="notation"></label>
+  <label class="tog">מהירות הנפשה<input type="range" min="0.4" max="2" step="0.1" data-r="speed" style="width:120px"></label>
+  <h5>מצב הדגמה</h5>
+  <div class="row"><button id="newDemo">ערבוב הדגמה חדש</button></div>
+</aside>
+
+<script>/*THREE*/</script>
+<script type="text/plain" id="cubejs-src">/*CUBEJS*/</script>
+<script>/*CORE*/</script>
+<script>/*VISION*/</script>
+<script>
+const TEMPLATES=/*TEMPLATES*/;
+</script>
+<script>
+/* ======================= APP ======================= */
+const C=CubeCore,FACES=C.FACES;
+const $=id=>document.getElementById(id);
+const STANDALONE=(()=>{try{return window.top===window.self;}catch(e){return false;}})();
+const OPTS={capLayout:'combined',verifyLayout:'list',solveLayout:'3d',liveCam:STANDALONE,adjust:true,autoFix:true,autoView:true,loop:false,notation:true,speed:1};
+const SEQ=[
+ {f:'F',title:'פאה 1 מתוך 6: הפאה הקדמית',text:'בחר פאה והחזק אותה מולך. זו תהיה “הקדמית” לאורך כל התהליך, אז שים לב גם מה למעלה.',keys:['F']},
+ {f:'L',title:'פאה 2: הפאה השמאלית',text:'סובב את כל הקוביה רבע סיבוב ימינה. הפאה שהייתה משמאל עכשיו מולך.',keys:['F','L']},
+ {f:'B',title:'פאה 3: הפאה האחורית',text:'עוד רבע סיבוב ימינה.',keys:['L','B']},
+ {f:'R',title:'פאה 4: הפאה הימנית',text:'עוד רבע סיבוב ימינה.',keys:['B','R']},
+ {f:'U',title:'פאה 5: הפאה העליונה',text:'עוד רבע סיבוב ימינה כדי לחזור לקדמית, ואז הטה את הקוביה כך שהחלק העליון פונה אליך.',keys:['R','F','U']},
+ {f:'D',title:'פאה 6: הפאה התחתונה',text:'הטה את הקוביה לאחור חצי סיבוב, עד שהתחתית מולך (הקדמית תהיה למעלה).',keys:['U','F','D']},
+];
+const CENTER_BASE=["R U D R2 U' D' R U D R2 U' D'","L2 U2 R2 F2 B2 L2 D2 R2 F2 B2","U2 F2 L2 F2 U2 D2 B2 R2 B2 D2","R2 B2 U D' R2 F2 L2 U' D F2","R' U' D F2 B2 U' D L U D' F2 B2 U D'","D2 B L' R D2 L R U2 L2 F U D' L2 U D R2","F R' F2 R' U2 L D2 L B U' B2 U' R2 D L2 D","B U2 B' F R2 F U2 F2 R2 F2 U2 F2 R2","U' B' L2 D' R2 F' R2 D L2 B U' B2 R2 U B2 U B2 U R2 B2","D F' U' F U F' D F D' F U B2 R2 U F2 D' F2 D R2 B2 U2"];
+C.buildCenterTable(CENTER_BASE);
+
+const S={stage:'intro',capIdx:0,faces:{},photo:null,quad:null,recog:null,data:null,palette:null,centerCells:null,sol:null,demo:false};
+function toast(t,ms){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('on'),ms||2600);}
+function busy(on,t){$('busy').classList.toggle('on',on);if(t)$('busyText').textContent=t;}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id==='s-'+id));S.stage=id;
+  $('title').textContent={intro:'פותר הקוביה עם תמונות',capture:'צילום הקוביה',adjust:'כיוונון',verify:'בדיקת הזיהוי',solve:'פתרון'}[id];
+  if(id!=='capture')stopCam();onResize();syncJump();}
+
+/* ---------- solver worker ---------- */
+let worker=null,solverReady=false,pendingSolve=null;
+function initWorker(){try{const src=$('cubejs-src').textContent;const blob=new Blob([src],{type:'text/javascript'});
+  worker=new Worker(URL.createObjectURL(blob));
+  worker.onmessage=e=>{const m=e.data;if(m.cmd==='init'){solverReady=true;}if(m.cmd==='solve'&&pendingSolve){const p=pendingSolve;pendingSolve=null;p(m);}};
+  worker.postMessage({cmd:'init'});}catch(err){worker=null;}}
+function solveStr(str){return new Promise((res)=>{
+  if(!worker){ // main-thread fallback
+    try{if(!window.Cube)(0,eval)($('cubejs-src').textContent.split('//@@TAIL')[0]);}catch(e){}
+    setTimeout(()=>{try{if(!window.__init){Cube.initSolver();window.__init=1;}const c=Cube.fromString(str);if(c.asString()!==str)return res({error:'pieces'});res({solution:c.solve()});}catch(e){res({error:'pieces'})}},30);return;}
+  const to=setTimeout(()=>{pendingSolve=null;worker.terminate();initWorker();res({error:'timeout'});},25000);
+  pendingSolve=m=>{clearTimeout(to);res(m);};worker.postMessage({cmd:'solve',str});});}
+
+/* ---------- texture helpers ---------- */
+function rounded(cv,size,rot,opts){opts=opts||{};const o=document.createElement('canvas');o.width=o.height=size;const x=o.getContext('2d');
+  const r=size*0.12;x.beginPath();x.moveTo(r,0);x.arcTo(size,0,size,size,r);x.arcTo(size,size,0,size,r);x.arcTo(0,size,0,0,r);x.arcTo(0,0,size,0,r);x.closePath();x.clip();
+  if(opts.bg){x.fillStyle=opts.bg;x.fillRect(0,0,size,size);}
+  if(cv){x.save();x.translate(size/2,size/2);x.rotate((rot||0)*Math.PI/2);x.drawImage(cv,-size/2,-size/2,size,size);x.restore();}
+  return o;}
+function rotatedCanvas(cv,q,size){return rounded(cv,size||64,q);}
+const TPL={};
+function loadTemplates(){return Promise.all(TEMPLATES.map((t,i)=>new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=112;c.getContext('2d').drawImage(im,0,0,112,112);TPL[i]=c;res();};im.src=t.src;})))
+  .then(()=>{ // sixth synthetic face
+    const c=document.createElement('canvas');c.width=c.height=112;const x=c.getContext('2d');x.fillStyle='#e5bf3a';x.fillRect(0,0,112,112);
+    x.fillStyle='#fff6d6';x.beginPath();x.arc(56,46,24,0,7);x.fill();x.fillStyle='#7a5a00';x.font='bold 30px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText('?',56,47);
+    x.font='600 17px system-ui';x.fillText('פאה 6',56,92);TPL[5]=c;});}
+
+/* ---------- 3D cube view ---------- */
+class CubeView{
+  constructor(el,opts){this.el=el;this.opts=opts||{};const R=this.renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+    R.setPixelRatio(Math.min(2,window.devicePixelRatio||1));el.prepend(R.domElement);
+    this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(32,1,0.1,100);
+    this.camPos=new THREE.Vector3(...(this.opts.cam||[5.2,4.4,6.6]));this.camTarget=this.camPos.clone();this.camera.position.copy(this.camPos);this.camera.lookAt(0,0,0);
+    this.scene.add(new THREE.AmbientLight(0xffffff,0.75));const d=new THREE.DirectionalLight(0xffffff,0.6);d.position.set(3,6,5);this.scene.add(d);
+    this.root=new THREE.Group();this.scene.add(this.root);this.pivot=new THREE.Group();this.root.add(this.pivot);
+    this.cubies=[];const bg=new THREE.BoxGeometry(0.97,0.97,0.97),bm=new THREE.MeshStandardMaterial({color:0x151515,roughness:.55});
+    for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){if(!x&&!y&&!z)continue;const m=new THREE.Mesh(bg,bm);m.position.set(x,y,z);m.userData.home=[x,y,z];this.root.add(m);this.cubies.push(m);}
+    this.stickers={};this.plane=new THREE.PlaneGeometry(0.86,0.86);this.anim=null;this.drag={yaw:0,pitch:0};this.userRot=new THREE.Quaternion();
+    if(this.opts.drag)this.enableDrag();
+    new ResizeObserver(()=>this.resize()).observe(el);this.resize();
+    const loop=t=>{this.tick(t);R.render(this.scene,this.camera);requestAnimationFrame(loop);};requestAnimationFrame(loop);}
+  resize(){const w=this.el.clientWidth,h=this.el.clientHeight;if(!w||!h)return;this.renderer.setSize(w,h,false);this.camera.aspect=w/h;
+    const asp=w/h;this.camera.fov=asp<1?2*Math.atan(Math.tan(17*Math.PI/180)/asp)*180/Math.PI:34;this.camera.updateProjectionMatrix();}
+  enableDrag(){const el=this.renderer.domElement;let last=null;
+    el.addEventListener('pointerdown',e=>{last=[e.clientX,e.clientY];el.setPointerCapture(e.pointerId);});
+    el.addEventListener('pointermove',e=>{if(!last)return;const dx=e.clientX-last[0],dy=e.clientY-last[1];last=[e.clientX,e.clientY];
+      const qy=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),dx*0.01);const qx=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),dy*0.01);
+      this.userRot.premultiply(qy).premultiply(qx);});
+    el.addEventListener('pointerup',()=>{last=null;});el.addEventListener('dblclick',()=>this.userRot.identity());}
+  texFor(id,canvas){let t=this.stickers[id]&&this.stickers[id].material.map;
+    const tex=new THREE.CanvasTexture(canvas);if(THREE.SRGBColorSpace)tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=4;return tex;}
+  // model: array of stickers {home,k,p,n,tu}; texFn(s)->canvas
+  setModel(model,texFn){for(const id in this.stickers){this.stickers[id].parent.remove(this.stickers[id]);this.stickers[id].material.map&&this.stickers[id].material.map.dispose();}
+    this.stickers={};for(const s of model){const id=s.home+s.k;const mat=new THREE.MeshBasicMaterial({map:this.texFor(id,texFn(s)),transparent:true});
+      const m=new THREE.Mesh(this.plane,mat);this.root.add(m);this.stickers[id]=m;}this.setState(model);}
+  updateTex(model,texFn){for(const s of model){const m=this.stickers[s.home+s.k];if(!m)continue;m.material.map.dispose();m.material.map=this.texFor(s.home+s.k,texFn(s));m.material.needsUpdate=true;}}
+  setState(model){for(const c of this.cubies){this.root.attach(c);c.position.set(...c.userData.home);c.quaternion.identity();}
+    this.pivot.quaternion.identity();
+    for(const s of model){const m=this.stickers[s.home+s.k];if(!m)continue;this.root.attach(m);
+      const n=new THREE.Vector3(...s.n),u=new THREE.Vector3(...s.tu),r=new THREE.Vector3().crossVectors(u,n);
+      m.position.set(s.p[0]+s.n[0]*0.488,s.p[1]+s.n[1]*0.488,s.p[2]+s.n[2]*0.488);
+      m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(r,u,n));}}
+  animateMove(move,model,dur){return new Promise(res=>{const {f,q}=C.parseMove(move);const a=new THREE.Vector3(...C.N[f]);
+    this.setState(model);this.pivot.quaternion.identity();
+    for(const c of this.cubies)if(new THREE.Vector3(...c.userData.home).dot(a)>0.5)this.pivot.attach(c);
+    for(const s of model)if(C.dot(s.p,C.N[f])===1)this.pivot.attach(this.stickers[s.home+s.k]);
+    const ang=q===3?Math.PI/2:-Math.PI/2*q;this.anim={t0:performance.now(),dur:dur*(q===2?1.4:1),axis:a,ang,res};});}
+  setView(v){this.camTarget.set(...v);}
+  setPose(qt){this.poseAnim=null;this.root.quaternion.copy(qt);}
+  tick(t){if(this.anim){const a=this.anim;let k=Math.min(1,(t-a.t0)/a.dur);const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      this.pivot.quaternion.setFromAxisAngle(a.axis,a.ang*e);if(k>=1){this.anim=null;a.res();}}
+    this.camera.position.lerp(this.camTarget,0.08);this.camera.lookAt(0,0,0);
+    if(this.poseFn)this.poseFn(t);
+    else if(this.opts.drag){this.root.quaternion.slerp(this.userRot,0.25);}}
+}
+function poseQuat(f){const r=C.RIGHTV[f],u=C.UPV[f],n=C.N[f];
+  const m=new THREE.Matrix4().set(r[0],r[1],r[2],0,u[0],u[1],u[2],0,n[0],n[1],n[2],0,0,0,0,1);return new THREE.Quaternion().setFromRotationMatrix(m);}
+const TILT=new THREE.Quaternion().setFromEuler(new THREE.Euler(0.38,-0.5,0,'XYZ'));
+
+/* ---------- capture guide ---------- */
+let guideView=null;
+function guideModel(){const d={};for(const f of FACES)d[f]=Array.from({length:9},()=>({c:0,q:0}));return C.buildModel(d);}
+function guideTex(target){return s=>{const cap=S.faces[s.home];
+  if(cap&&cap.cells)return rounded(cap.cells[s.k],96,0);
+  if(s.home===target){const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d');x.fillStyle='#1f6f5c';x.fillRect(0,0,96,96);
+    if(s.k===4){x.fillStyle='#fff';x.font='44px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText('📷',48,52);}return rounded(c,96,0);}
+  return rounded(null,96,0,{bg:'#d9d4cc'});};}
+function setupGuide(){const el=$('guide');if(!guideView){guideView=new CubeView(el,{cam:[0,0.3,8.6]});}
+  const step=SEQ[S.capIdx];guideView.setModel(guideModel(),guideTex(step.f));
+  const keys=step.keys.map(poseQuat);const seg=1100,hold=1300;
+  guideView.poseFn=t=>{let qt;
+    if(keys.length===1){const w=Math.sin(t/600)*0.12;qt=keys[0].clone().premultiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(0,w,0)));}
+    else{const total=seg*(keys.length-1)+hold*2;let tt=t%total;
+      if(tt<hold)qt=keys[0].clone();else{tt-=hold;const i=Math.min(keys.length-2,Math.floor(tt/seg));let k=Math.min(1,(tt-i*seg)/seg);k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+        qt=keys[i].clone().slerp(keys[i+1],tt>=seg*(keys.length-1)?1:k);}}
+    guideView.root.quaternion.copy(qt.premultiply(TILT));};}
+function renderDots(){$('dots').innerHTML=SEQ.map((s,i)=>`<i class="${i<S.capIdx?'done':i===S.capIdx?'cur':''}"></i>`).join('');}
+
+/* ---------- camera ---------- */
+let stream=null,camMode='split-guide',camOk=false;
+function syncShoot(){const useLbl=!S.demo&&!camOk&&!(OPTS.capLayout==='split'&&capPhase==='guide');$('shootBtn').style.display=useLbl?'none':'';$('shootLbl').style.display=useLbl?'flex':'none';}
+async function startCam(){const v=$('video');if(!OPTS.liveCam){noCam();return;}
+  if(stream){v.srcObject=stream;$('nocam').style.display='none';$('frame').style.display='';return;}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){noCam();return;}
+  try{stream=await Promise.race([navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}},audio:false}),new Promise((_,rej)=>setTimeout(()=>rej('timeout'),3000))]);
+    v.srcObject=stream;await v.play().catch(()=>{});camOk=true;syncShoot();$('nocam').style.display='none';$('frame').style.display='';$('video').style.display='';}
+  catch(e){noCam();}}
+function noCam(){camOk=false;syncShoot();$('nocam').style.display='flex';$('frame').style.display='none';$('video').style.display='none';}
+function stopCam(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}}
+function enterCapture(i){S.capIdx=i;show('capture');renderDots();const st=SEQ[i];$('capTitle').textContent=st.title;$('capText').textContent=st.text;
+  $('capBack').disabled=i===0&&false;$('capBack').textContent=i===0?'→ ביטול':'→ הקודמת';
+  applyCapLayout(false);setupGuide();if(!S.demo)startCam();else demoCamBox();}
+let capPhase='guide';
+function applyCapLayout(toCam){const split=OPTS.capLayout==='split';capPhase=split&&!toCam?'guide':'cam';
+  $('guide').classList.toggle('full',split&&capPhase==='guide');$('camwrap').style.display=split&&capPhase==='guide'?'none':'';
+  $('shootBtn').textContent=split&&capPhase==='guide'?'הבנתי, לצילום':(S.demo?'צלם (הדגמה)':'צלם');
+  syncShoot();if(guideView)guideView.resize();}
+function demoCamBox(){noCam();syncShoot();$('nocam').innerHTML='<div>מצב הדגמה: “הצילום” יווצר מהקוביה המעורבבת המדומה.</div>';}
+function onShoot(){if(OPTS.capLayout==='split'&&capPhase==='guide'){applyCapLayout(true);return;}
+  if(S.demo){const f=SEQ[S.capIdx].f;const ph=demoPhoto(f);openAdjust(ph.canvas,ph.quad);return;}
+  const v=$('video');if(stream&&v.videoWidth){const cv=document.createElement('canvas');const sc=Math.min(1,1600/Math.max(v.videoWidth,v.videoHeight));
+    cv.width=v.videoWidth*sc;cv.height=v.videoHeight*sc;cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
+    const box=$('cambox').getBoundingClientRect();const s=Math.max(box.width/cv.width,box.height/cv.height);const ox=(box.width-cv.width*s)/2,oy=(box.height-cv.height*s)/2;
+    const fr=$('frame').getBoundingClientRect();const tl=[(fr.left-box.left-ox)/s,(fr.top-box.top-oy)/s],br=[(fr.right-box.left-ox)/s,(fr.bottom-box.top-oy)/s];
+    const quad=[tl,[br[0],tl[1]],br,[tl[0],br[1]]];if(OPTS.adjust)openAdjust(cv,quad);else acceptFace(cv,quad);}
+  else toast('לחץ על “לצלם את הפאה”');}
+function loadFile(file){if(!file)return;const url=URL.createObjectURL(file);const im=new Image();im.onerror=()=>toast('לא הצלחתי לפתוח את התמונה. נסה לצלם שוב או לבחור קובץ JPG.');im.onload=()=>{const sc=Math.min(1,1600/Math.max(im.width,im.height));
+  const cv=document.createElement('canvas');cv.width=im.width*sc;cv.height=im.height*sc;cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+  const m=Math.min(cv.width,cv.height)*0.62;const cx=cv.width/2,cy=cv.height/2;
+  openAdjust(cv,[[cx-m/2,cy-m/2],[cx+m/2,cy-m/2],[cx+m/2,cy+m/2],[cx-m/2,cy+m/2]]);URL.revokeObjectURL(url);};im.src=url;}
+
+/* ---------- adjust ---------- */
+let adj=null;
+function openAdjust(cv,quad){$('adjTitle').textContent=SEQ[S.capIdx].title.replace(/ מתוך 6/,'');S.photo=cv;S.quad=quad.map(p=>p.slice());show('adjust');requestAnimationFrame(drawAdjust);}
+function drawAdjust(){const wrap=$('adjwrap'),cv=$('adjcv');const W=wrap.clientWidth,H=wrap.clientHeight;const ph=S.photo;if(!ph||!W)return;
+  const s=Math.min(W/ph.width,H/ph.height);const ox=(W-ph.width*s)/2,oy=(H-ph.height*s)/2;adj={s,ox,oy};
+  cv.width=W*devicePixelRatio;cv.height=H*devicePixelRatio;cv.style.width=W+'px';cv.style.height=H+'px';const x=cv.getContext('2d');x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  x.drawImage(ph,ox,oy,ph.width*s,ph.height*s);drawAdjSvg();}
+function drawAdjSvg(){const {s,ox,oy}=adj;const P=S.quad.map(p=>[p[0]*s+ox,p[1]*s+oy]);
+  const h=Vision.homography(P,3);const map=(x,y)=>{const w=h[6]*x+h[7]*y+1;return [(h[0]*x+h[1]*y+h[2])/w,(h[3]*x+h[4]*y+h[5])/w];};
+  let lines='';for(let i=1;i<3;i++){const a=map(i,0),b=map(i,3),c=map(0,i),d=map(3,i);lines+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/><line x1="${c[0]}" y1="${c[1]}" x2="${d[0]}" y2="${d[1]}"/>`;}
+  $('adjsvg').innerHTML=`<polygon points="${P.map(p=>p.join(',')).join(' ')}" fill="rgba(31,111,92,.12)" stroke="#fff" stroke-width="2"/><g stroke="rgba(255,255,255,.8)" stroke-width="1.2">${lines}</g>`+
+    P.map((p,i)=>`<circle class="handle" data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="13"/>`).join('');}
+(function(){let drag=-1;const svg=$('adjsvg');
+  svg.addEventListener('pointerdown',e=>{const r=svg.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;let best=-1,bd=50;
+    S.quad.forEach((p,i)=>{const d=Math.hypot(p[0]*adj.s+adj.ox-x,p[1]*adj.s+adj.oy-y);if(d<bd){bd=d;best=i;}});drag=best;if(drag>=0)svg.setPointerCapture(e.pointerId);});
+  svg.addEventListener('pointermove',e=>{if(drag<0)return;const r=svg.getBoundingClientRect();S.quad[drag]=[(e.clientX-r.left-adj.ox)/adj.s,(e.clientY-r.top-adj.oy)/adj.s];drawAdjSvg();});
+  svg.addEventListener('pointerup',()=>drag=-1);})();
+function acceptFace(cv,quad){const f=SEQ[S.capIdx].f;const warped=Vision.warp(cv,quad,300);S.faces[f]={warped,cells:Vision.cells(warped)};
+  if(S.capIdx<5){if(S.queue&&S.queue.length){S.capIdx++;loadFile(S.queue.shift());}else enterCapture(S.capIdx+1);}else{S.queue=[];runRecognition();}}
+
+/* ---------- recognition & verify ---------- */
+function runRecognition(){busy(true,'מזהה צבעים וכיוונים…');setTimeout(()=>{const faces={};for(const f of FACES)faces[f]=S.faces[f].warped;
+  const r=Vision.recognize(faces);S.data=r.data;S.palette=r.palette;S.centerCells=FACES.split('').map(f=>S.data[f][4].cell);S.fixed=new Set();busy(false);renderVerify();show('verify');},60);}
+const rgbCss=c=>`rgb(${c.map(Math.round).join(',')})`;
+function renderVerify(){const pos={U:[0,1],L:[1,0],F:[1,1],R:[1,2],B:[1,3],D:[2,1]};let cellsHtml=[];
+  const net=$('vnet');net.innerHTML='';net.classList.toggle('list',OPTS.verifyLayout==='list');
+  const order=[];if(OPTS.verifyLayout==='list')SEQ.forEach(x=>order.push(x.f));else for(let r=0;r<3;r++)for(let c=0;c<4;c++)order.push(Object.keys(pos).find(k=>pos[k][0]===r&&pos[k][1]===c));
+  for(const f of order){const wrap=document.createElement('div');
+    if(!f){wrap.className='face blank';net.appendChild(wrap);continue;}
+    const face=document.createElement('div');face.className='face';
+    S.data[f].forEach((d,k)=>{const cell=document.createElement('div');cell.className='cell'+(d.lowConf?' low':'')+(S.fixed.has(f+k)?' fixed':'');
+      cell.appendChild(rounded(d.cell,80,0));const bar=document.createElement('div');bar.className='bar';bar.style.background=rgbCss(S.palette[d.c]);cell.appendChild(bar);
+      if(k!==4){const mini=document.createElement('div');mini.className='mini';mini.appendChild(rotatedCanvas(S.centerCells[d.c],d.q,48));cell.appendChild(mini);}
+      cell.onclick=()=>openSheet(f,k);face.appendChild(cell);});
+    wrap.appendChild(face);const lab=document.createElement('div');lab.className='flabel';lab.textContent={U:'עליונה',L:'שמאלית',F:'קדמית',R:'ימנית',B:'אחורית',D:'תחתונה'}[f];wrap.appendChild(lab);net.appendChild(wrap);}
+  const cnt=[0,0,0,0,0,0];for(const f of FACES)for(const d of S.data[f])cnt[d.c]++;
+  $('vlegend').innerHTML='';cnt.forEach((n,i)=>{const ch=document.createElement('div');ch.className='chip'+(n!==9?' bad':'');ch.appendChild(rounded(S.centerCells[i],44,0));ch.append(n+' / 9');$('vlegend').appendChild(ch);});
+  const low=FACES.split('').reduce((a,f)=>a+S.data[f].filter(d=>d.lowConf).length,0);
+  let msg='';if(cnt.some(n=>n!==9))msg+=`<div class="note err">יש צבע שמופיע יותר או פחות מ־9 פעמים. מתקנים בנגיעה על המדבקה.</div>`;
+  if(low)msg+=`<div class="note warn">${low} מדבקות מסומנות בקו מקווקו: שם הזיהוי פחות בטוח, כדאי לבדוק אותן.</div>`;
+  $('vmsg').innerHTML=msg;}
+let sheetAt=null;
+function openSheet(f,k){sheetAt={f,k};const d=S.data[f][k];$('sbig').innerHTML='';$('sbig').appendChild(rounded(d.cell,300,0));
+  const sc=$('scolors');sc.innerHTML='';if(k===4)sc.innerHTML='<div class="small muted" style="grid-column:1/-1">זה מרכז הפאה, והוא קובע את הצבע שלה.</div>';else S.centerCells.forEach((cc,i)=>{const b=document.createElement('button');b.className='opt'+(d.c===i?' sel':'');b.appendChild(rounded(cc,80,0));
+    b.onclick=()=>{d.c=i;d.lowConf=false;openSheet(f,k);renderVerify();};sc.appendChild(b);});
+  const sr=$('srots');sr.innerHTML='';if(k===4){sr.innerHTML='<div class="small muted" style="grid-column:1/-1">המרכז הוא נקודת הייחוס לכיוון של הצבע שלו.</div>';}
+  else [0,1,2,3].forEach(q=>{const b=document.createElement('button');b.className='opt'+(d.q===q?' sel':'');b.appendChild(rotatedCanvas(S.centerCells[d.c],q,90));
+    b.onclick=()=>{d.q=q;d.lowConf=false;openSheet(f,k);renderVerify();};sr.appendChild(b);});
+  $('sheet').classList.add('on');}
+
+/* ---------- solving ---------- */
+async function computeSolution(){const v=C.validate(S.data);if(Array.isArray(v)){toast('יש צבעים שלא מופיעים בדיוק 9 פעמים. צריך לתקן לפני החישוב.');return;}
+  busy(true,solverReady?'מחשב פתרון…':'מכין את מנוע הפתרון (כמה שניות)…');
+  const r=await solveStr(v.str);busy(false);
+  if(r.error){const m={pieces:'הצבעים לא מרכיבים קוביה אמיתית. כנראה שיש מדבקה שזוהתה בצבע לא נכון.',corner:'נראה שפינה אחת מסובבת. בדוק את הצבעים בפינות.',edge:'נראה שאחת השפות הפוכה. בדוק את הצבעים בשפות.',parity:'יש שתי מדבקות שהצבעים שלהן התחלפו. בדוק את הזיהוי.',timeout:'החישוב לקח יותר מדי זמן. בדוק את הזיהוי ונסה שוב.'};
+    $('vmsg').innerHTML=`<div class="note err">${m[r.error]||'שגיאה'}</div>`;toast(m[r.error]);return;}
+  buildSolution(r.solution);}
+function buildSolution(solStr){
+  const model=C.buildModel(S.data);const plan=C.orientationPlan(model,solStr);
+  if(OPTS.autoFix&&plan.corrections.length){for(const c of plan.corrections){const d=S.data[c.home][c.k];d.q=(d.q+c.delta)%4;S.fixed.add(c.home+c.k);}
+    toast(`תוקן אוטומטית הכיוון של ${plan.corrections.length} מדבקות`);}
+  const model2=C.buildModel(S.data);const plan2=C.orientationPlan(model2,solStr);
+  if(!OPTS.autoFix&&plan2.corrections.length){toast('יש מדבקות שהכיוון שלהן לא מתיישב עם השאר. בדוק אותן או הפעל תיקון אוטומטי.');}
+  const fix=C.centerFix(plan2.tw);
+  const A=C.simplify(C.splitAlg(solStr)).map(m=>({m,ph:0}));
+  const B=fix===null?[]:C.simplify(C.splitAlg(fix.join(' '))).map(m=>({m,ph:1}));
+  if(fix===null)toast('לא נמצא צירוף לסיבוב המרכזים. כנראה שגיאה בזיהוי הכיוונים.');
+  const moves=A.concat(B);const states=[C.cloneModel(model2)];for(const mv of moves)states.push(C.applyMove(C.cloneModel(states[states.length-1]),mv.m));
+  S.sol={moves,states,idx:0,model:model2,phA:A.length,phB:B.length};openSolve();}
+
+/* ---------- solve screen ---------- */
+let solveView=null;
+const FN={U:'העליונה',D:'התחתונה',R:'הימנית',L:'השמאלית',F:'הקדמית',B:'האחורית'};
+function describe(m){const {f,q}=C.parseMove(m);const half=q===2;const cw=q===1;
+  const t={U:[`השורה העליונה זזה שמאלה`,`השורה העליונה זזה ימינה`],D:[`השורה התחתונה זזה ימינה`,`השורה התחתונה זזה שמאלה`],
+    R:[`הטור הימני עולה למעלה`,`הטור הימני יורד למטה`],L:[`הטור השמאלי יורד למטה`,`הטור השמאלי עולה למעלה`],
+    F:[`הפאה הקדמית מסתובבת עם כיוון השעון`,`הפאה הקדמית מסתובבת נגד כיוון השעון`],B:[`הפאה האחורית מסתובבת נגד כיוון השעון (במבט מקדימה)`,`הפאה האחורית מסתובבת עם כיוון השעון (במבט מקדימה)`]}[f];
+  if(half)return `חצי סיבוב לפאה ${FN[f]}<small>שני רבעי סיבוב באותו כיוון</small>`;
+  return `${t[cw?0:1]}<small>רבע סיבוב לפאה ${FN[f]}</small>`;}
+const VIEWS={def:[5.2,4.4,6.6],L:[-5.2,4.4,6.6],D:[5.2,-4.4,6.6],B:[-4.6,4.4,-6.8]};
+function solveTex(s){if(S.demo&&!S.faces.F)return rounded(TPL[s.c],96,s.q);const cap=S.data[s.home][s.k];return rounded(cap.cell,96,0);}
+function openSolve(){show('solve');applySolveLayout();if(!solveView){solveView=new CubeView($('view3d'),{drag:true});}
+  solveView.setModel(S.sol.states[0],solveTex);const ctr=S.data;
+  $('hold').innerHTML='';const a=document.createElement('span');a.textContent='החזק כך: מולך';$('hold').appendChild(a);$('hold').appendChild(rounded(ctr.F[4].cell,52,0));
+  const b=document.createElement('span');b.textContent='ולמעלה';$('hold').appendChild(b);$('hold').appendChild(rounded(ctr.U[4].cell,52,0));
+  goStep(S.sol.idx,true);}
+let stepToken=0;
+async function goStep(i,animate){const sol=S.sol;sol.idx=Math.max(0,Math.min(sol.moves.length,i));const n=sol.moves.length;const tok=++stepToken;
+  $('progbar').style.width=(sol.idx/n*100)+'%';$('doneBadge').style.display='none';
+  $('prevBtn').disabled=sol.idx===0;
+  renderFlat(sol.states[sol.idx]);
+  if(sol.idx>=n){$('stepno').textContent=`${n} צעדים, סיימת`;$('phase').textContent='סיום';$('mnot').textContent='✓';$('mdesc').innerHTML='הקוביה פתורה, וכל התמונות עומדות באותו כיוון.<small>אפשר לחזור אחורה כדי לבדוק צעדים</small>';
+    $('nextBtn').textContent='להתחיל מחדש';solveView.setState(sol.states[n]);solveView.setView(VIEWS.def);$('doneBadge').style.display='flex';renderFlat(sol.states[n]);return;}
+  $('nextBtn').textContent='ביצעתי ✓';
+  const mv=sol.moves[sol.idx];$('stepno').textContent=`צעד ${sol.idx+1} מתוך ${n}`;
+  $('phase').textContent=mv.ph===0?`שלב א׳: סידור החלקים (${sol.phA})`:`שלב ב׳: יישור המרכזים (${sol.phB})`;
+  if(mv.ph===1&&sol.idx===sol.phA&&animate)toast('החלקים במקום. עכשיו מיישרים את התמונות במרכזים, ייתכן שזה ייראה כאילו מערבבים שוב.',4200);
+  $('mnot').textContent=mv.m;$('mdesc').innerHTML=describe(mv.m);
+  const f=mv.m[0];solveView.setView(OPTS.autoView&&VIEWS[f]?VIEWS[f]:VIEWS.def);
+  solveView.setState(sol.states[sol.idx]);
+  do{await new Promise(r=>setTimeout(r,animate?420:200));if(tok!==stepToken)return;
+    await solveView.animateMove(mv.m,sol.states[sol.idx],520/OPTS.speed);if(tok!==stepToken)return;
+    solveView.setState(sol.states[sol.idx+1]);if(OPTS.loop){await new Promise(r=>setTimeout(r,900));if(tok!==stepToken)return;solveView.setState(sol.states[sol.idx]);}}
+  while(OPTS.loop&&tok===stepToken);}
+function renderFlat(state){if(OPTS.solveLayout==='3d')return;const fl=C.readFacelets(state);const pos={U:[0,1],L:[1,0],F:[1,1],R:[1,2],B:[1,3],D:[2,1]};const net=$('fnet');net.innerHTML='';
+  for(let r=0;r<3;r++)for(let c=0;c<4;c++){const f=Object.keys(pos).find(k=>pos[k][0]===r&&pos[k][1]===c);const face=document.createElement('div');face.className=f?'face':'face blank';
+    if(f)fl[f].forEach(s=>{const cell=document.createElement('div');cell.className='cell';
+      // texture is photo-frame; compute its rotation in this face's frame
+      const q=C.qFor(f,s.tu);cell.appendChild(rounded(solveTex(s),60,q));face.appendChild(cell);});net.appendChild(face);}}
+function applySolveLayout(){const s=$('s-solve');s.classList.remove('lay-flat','lay-both');if(OPTS.solveLayout==='flat')s.classList.add('lay-flat');if(OPTS.solveLayout==='both')s.classList.add('lay-both');
+  s.classList.toggle('hide-not',!OPTS.notation);if(solveView)solveView.resize();if(S.sol)renderFlat(S.sol.states[S.sol.idx]);}
+
+/* ---------- demo data ---------- */
+let DEMO=null;
+function makeDemo(){const d0={};for(const f of FACES)d0[f]=Array.from({length:9},()=>({c:FACES.indexOf(f),q:0}));const st=C.buildModel(d0);
+  const mv=[];for(const f of FACES)for(const s of ['',"'",'2'])mv.push(f+s);let last='';const scr=[];
+  while(scr.length<24){const m=mv[Math.floor(Math.random()*18)];if(m[0]===last)continue;last=m[0];scr.push(m);}
+  C.applyAlg(st,scr.join(' '));DEMO=C.readFacelets(st);}
+function demoFaceCanvas(f){const S0=300,c=document.createElement('canvas');c.width=c.height=S0;const x=c.getContext('2d');x.fillStyle='#111';x.fillRect(0,0,S0,S0);
+  DEMO[f].forEach((s,k)=>{const i=(k/3)|0,j=k%3;const q=C.qFor(f,s.up);x.drawImage(rounded(TPL[s.c],88,q),j*100+6,i*100+6,88,88);});return c;}
+function demoPhoto(f){const W=900,H=1200,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#e9e4dc');g.addColorStop(1,'#c9c1b5');x.fillStyle=g;x.fillRect(0,0,W,H);
+  const face=demoFaceCanvas(f);const a=(Math.random()-.5)*0.14,h=270;x.save();x.translate(W/2,H/2);x.rotate(a);x.drawImage(face,-h,-h,2*h,2*h);x.restore();
+  const quad=[[-h,-h],[h,-h],[h,h],[-h,h]].map(([px,py])=>[W/2+px*Math.cos(a)-py*Math.sin(a),H/2+px*Math.sin(a)+py*Math.cos(a)]);
+  return {canvas:c,quad};}
+function demoAllFaces(){if(!DEMO)makeDemo();for(const f of FACES){const w=demoFaceCanvas(f);S.faces[f]={warped:w,cells:Vision.cells(w)};}}
+function startDemo(){S.demo=true;S.faces={};makeDemo();enterCapture(0);}
+
+/* ---------- prototype panel ---------- */
+const JUMPS=[['פתיחה','intro'],['צילום 1','cap0'],['צילום 2','cap1'],['צילום 5','cap4'],['כיוונון','adjust'],['אימות','verify'],['פתרון','solve'],['שלב ב׳','solveB'],['סיום','done']];
+function syncJump(){$('jumpRow').innerHTML='';JUMPS.forEach(([l,k])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>jump(k);$('jumpRow').appendChild(b);});}
+async function jump(k){closePanel();if(k==='intro'){reset();return;}
+  if(!S.demo||!DEMO){S.demo=true;S.faces={};makeDemo();}
+  if(k.startsWith('cap')){const i=+k.slice(3);S.faces={};for(let j=0;j<i;j++){const w=demoFaceCanvas(SEQ[j].f);S.faces[SEQ[j].f]={warped:w,cells:Vision.cells(w)};}enterCapture(i);return;}
+  if(k==='adjust'){S.capIdx=0;const ph=demoPhoto('F');openAdjust(ph.canvas,ph.quad);return;}
+  demoAllFaces();const faces={};for(const f of FACES)faces[f]=S.faces[f].warped;const r=Vision.recognize(faces);S.data=r.data;S.palette=r.palette;S.centerCells=FACES.split('').map(f=>S.data[f][4].cell);S.fixed=new Set();
+  if(k==='verify'){renderVerify();show('verify');return;}
+  await computeSolution();if(!S.sol)return;
+  if(k==='solveB')goStep(S.sol.phA,true);if(k==='done')goStep(S.sol.moves.length,false);}
+function openPanel(){$('panel').classList.add('on');$('scrim').classList.add('on');syncPanel();}
+function closePanel(){$('panel').classList.remove('on');$('scrim').classList.remove('on');}
+function syncPanel(){document.querySelectorAll('[data-opt]').forEach(r=>r.querySelectorAll('button').forEach(b=>b.classList.toggle('sel',OPTS[r.dataset.opt]===b.dataset.v)));
+  document.querySelectorAll('[data-t]').forEach(i=>i.checked=!!OPTS[i.dataset.t]);document.querySelectorAll('[data-r]').forEach(i=>i.value=OPTS[i.dataset.r]);}
+document.querySelectorAll('[data-opt]').forEach(r=>r.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;OPTS[r.dataset.opt]=b.dataset.v;syncPanel();
+  if(r.dataset.opt==='capLayout'&&S.stage==='capture')enterCapture(S.capIdx);if(r.dataset.opt==='solveLayout')applySolveLayout();if(r.dataset.opt==='verifyLayout'&&S.data)renderVerify();}));
+document.querySelectorAll('[data-t]').forEach(i=>i.addEventListener('change',()=>{OPTS[i.dataset.t]=i.checked;
+  if(i.dataset.t==='notation')applySolveLayout();if(i.dataset.t==='liveCam'&&S.stage==='capture'&&!S.demo){stopCam();startCam();}
+  if((i.dataset.t==='loop'||i.dataset.t==='autoView')&&S.stage==='solve')goStep(S.sol.idx,false);}));
+document.querySelectorAll('[data-r]').forEach(i=>i.addEventListener('input',()=>{OPTS[i.dataset.r]=+i.value;}));
+
+/* ---------- wiring ---------- */
+function reset(){S.faces={};S.data=null;S.sol=null;S.demo=false;show('intro');}
+$('panelBtn').onclick=openPanel;$('panelClose').onclick=closePanel;$('scrim').onclick=closePanel;
+$('homeBtn').onclick=()=>{if(S.stage==='intro'||confirmReset())reset();};
+function confirmReset(){return true;}
+$('startBtn').onclick=()=>{S.demo=false;S.faces={};enterCapture(0);};
+$('demoBtn').onclick=startDemo;$('newDemo').onclick=()=>{makeDemo();toast('נוצר ערבוב הדגמה חדש');if(S.stage!=='intro')jump(S.stage==='solve'?'solve':S.stage==='verify'?'verify':'cap0');};
+$('shootBtn').onclick=onShoot;
+$('capBack').onclick=()=>{if(S.capIdx===0){reset();return;}delete S.faces[SEQ[S.capIdx-1].f];enterCapture(S.capIdx-1);};
+document.querySelectorAll('.fin.cam').forEach(i=>i.onchange=e=>{loadFile(e.target.files[0]);e.target.value='';});document.querySelectorAll('.fin.gal').forEach(i=>i.onchange=e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;S.queue=fs.slice(1,6-S.capIdx);loadFile(fs[0]);if(fs.length>1)toast(`נבחרו ${fs.length} תמונות. הן ישויכו לפאות לפי הסדר, ובכל אחת מכוונים את הפינות.`,4000);});
+$('retake').onclick=()=>enterCapture(S.capIdx);$('adjOk').onclick=()=>acceptFace(S.photo,S.quad);
+$('vBack').onclick=()=>{S.faces={};enterCapture(0);};$('solveBtn').onclick=computeSolution;
+$('sheet').onclick=e=>{if(e.target.id==='sheet')$('sheet').classList.remove('on');};$('sclose').onclick=()=>$('sheet').classList.remove('on');
+$('nextBtn').onclick=()=>{if(S.sol.idx>=S.sol.moves.length){reset();return;}goStep(S.sol.idx+1,true);};
+$('prevBtn').onclick=()=>goStep(S.sol.idx-1,true);$('replay').onclick=()=>goStep(S.sol.idx,false);
+function onResize(){if(S.stage==='adjust')drawAdjust();}
+window.addEventListener('resize',onResize);
+loadTemplates().then(()=>{initWorker();syncJump();});
+</script>
+</body>
+</html>
