@@ -2520,7 +2520,7 @@ const TEMPLATES=[{"src": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wB
 const C=CubeCore,FACES=C.FACES;
 const $=id=>document.getElementById(id);
 const STANDALONE=(()=>{try{return window.top===window.self;}catch(e){return false;}})();
-const OPTS={capLayout:'combined',verifyLayout:'list',solveLayout:'3d',liveCam:STANDALONE,adjust:true,autoFix:true,autoView:true,loop:false,notation:true,speed:1};
+const OPTS={capLayout:'combined',verifyLayout:'list',solveLayout:'3d',liveCam:STANDALONE,adjust:true,autoFix:true,autoView:false,loop:false,notation:true,speed:1};
 const SEQ=[
  {f:'F',title:'פאה 1 מתוך 6: הפאה הקדמית',text:'בחר פאה והחזק אותה מולך. זו תהיה “הקדמית” לאורך כל התהליך, אז שים לב גם מה למעלה.',keys:['F']},
  {f:'L',title:'פאה 2: הפאה השמאלית',text:'סובב את כל הקוביה רבע סיבוב ימינה. הפאה שהייתה משמאל עכשיו מולך.',keys:['F','L']},
